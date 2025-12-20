@@ -1,0 +1,22 @@
+# Genomic data
+*.fna
+*.fasta
+*.fa
+*.gbk
+*.gff
+*.json
+*.zip
+
+# antiSMASH / BiG-SCAPE outputs
+index.html
+regions.js
+css/
+js/
+images/
+
+# Docker
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
