@@ -1,4 +1,4 @@
-# Genomic data
+# Genomic input data
 *.fna
 *.fasta
 *.fa
@@ -7,16 +7,32 @@
 *.json
 *.zip
 
-# antiSMASH / BiG-SCAPE outputs
+# Pipeline outputs
+batches/
+output/
+cache/
+logs/
+SVG/
+network_files/
+
+# antiSMASH / BiG-SCAPE HTML assets
 index.html
 regions.js
 css/
 js/
 images/
 
+
+# Pfam 
+pfam/
+
+
 # Docker
 *.log
+*.tmp
 
-# OS / editor
+# OS / editor junk
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
