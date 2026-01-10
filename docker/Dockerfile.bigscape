@@ -1,0 +1,11 @@
+FROM quay.io/biocontainers/bigscape:1.1.5--pyhdfd78af_0
+
+# Create expected HTML template directory
+RUN mkdir -p /usr/local/bin/html_template
+
+# Copy HTML template from correct BiG-SCAPE install location
+RUN cp -r /usr/local/share/bigscape/html_template/* \
+          /usr/local/bin/html_template/
+
+# Ensure permissions
+RUN chmod -R 755 /usr/local/bin/html_template
