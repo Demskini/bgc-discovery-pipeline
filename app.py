@@ -1,6 +1,6 @@
 import streamlit as st
 from pathlib import Path
-from scripts.run_batch import run_batch
+from scripts.run_batch import run_batch, check_docker
 
 st.title("BGC Discovery Pipeline")
 
@@ -12,6 +12,12 @@ batches_dir = repo_root / "batches"
 batches = [b.name for b in batches_dir.iterdir() if b.is_dir()]
 
 batch = st.selectbox("Select batch", batches)
+
+### MIBiG ###
+
+st.subheader("BiG-SCAPE options")
+
+use_mibig = st.checkbox("Include MIBiG reference clusters", value=True)
 
 ### bigscape cutoffs ###
 
@@ -33,9 +39,28 @@ if cutoff_07:
 ### run button ###
 
 if st.button("Run Pipeline"):
+
+    # Check Docker availability first
+    try:
+        check_docker()
+    except RuntimeError as e:
+        st.error(str(e))
+        st.stop()
+
+    # Validate user input
     if not bigscape_cutoffs:
         st.error("Select at least one BiG-SCAPE cutoff.")
-    else:
-        st.write(f"Running batch `{batch}` with cutoffs {bigscape_cutoffs}")
-        run_batch(batch, bigscape_cutoffs)
-        st.success("Pipeline finished.")
+        st.stop()
+
+    # Status message
+    mibig_status = "including MIBiG" if use_mibig else "excluding MIBiG"
+    st.write(
+        f"Running batch `{batch}` with cutoffs {bigscape_cutoffs} "
+        f"{mibig_status}."
+    )
+
+    # Run the pipeline
+    run_batch(batch, bigscape_cutoffs, use_mibig)
+
+    # Success message
+    st.success("Pipeline finished.")
