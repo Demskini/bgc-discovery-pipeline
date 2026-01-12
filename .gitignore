@@ -8,12 +8,17 @@
 *.zip
 
 # Pipeline outputs
-batches/
+batches/*
 output/
 cache/
 logs/
 SVG/
 network_files/
+
+# Allow example test batch input
+!batches/short_batch_test/
+!batches/short_batch_test/input/
+!batches/short_batch_test/input/**
 
 # antiSMASH / BiG-SCAPE HTML assets
 index.html
@@ -21,7 +26,6 @@ regions.js
 css/
 js/
 images/
-
 
 # Pfam 
 pfam/

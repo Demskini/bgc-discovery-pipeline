@@ -39,8 +39,8 @@ without requiring direct interaction with the command line.
 
 This pipeline is designed to run across Windows, Linux, and macOS.
 
-Some core tools used in this workflow — specifically antiSMASH and
-BiG-SCAPE — are distributed as Docker images built for
+Core tools used in this workflow, specifically antiSMASH and
+BiG-SCAPE are distributed as Docker images built for
 linux/amd64 (x86_64) architecture and do not currently provide native
 arm64 builds.
 
@@ -53,6 +53,62 @@ On Apple Silicon systems, this forces Docker to run the containers via x86_64
 emulation. While this may incur a small performance cost on macOS, it guarantees
 consistent and reproducible behavior across development machines and Linux-based
 HPC environments.
+
+## Streamlit User Interface and Input Handling
+
+The pipeline includes an optional Streamlit-based graphical user interface (GUI)
+designed to further lower the barrier to entry for non-computational users.
+Through this interface, users can create, manage, and execute analysis batches
+entirely through a web browser without interacting directly with the command
+line.
+
+## Batch Creation and File Upload
+
+Users create new analysis batches by providing a batch name and uploading one
+or more genome files. The interface enforces basic validation rules at upload
+time to prevent common input errors, including:
+
+-Restricting uploads to supported genome file types
+--(.fna, .fasta, .gbk, and .txt)
+
+-Preventing invalid or unsafe batch names
+
+-Preventing accidental overwriting of existing batches
+
+Each batch is automatically organized into a standardized directory structure
+(input/, antismash/, bigscape/) to ensure consistency across analyses.
+
+## FASTA Validation and Automatic Format Normalization
+
+To accommodate common laboratory data-sharing practices, the interface allows
+genome sequences to be uploaded as plain-text (.txt) files, provided they are
+formatted as valid FASTA files. Uploaded text files are checked for FASTA
+formatting prior to batch creation.
+
+When valid FASTA-formatted .txt files are detected, they are automatically
+normalized to a standard FASTA file extension before downstream analysis. This
+ensures compatibility with antiSMASH, which determines input validity based on
+file extension rather than file contents.
+
+This design choice allows users to upload files in familiar formats while
+maintaining strict compatibility with downstream bioinformatics tools.
+
+## Guided Execution and Progress Feedback
+
+Pipeline execution is initiated through a single action in the interface.
+During execution, the interface provides live, step-by-step status updates,
+including:
+
+-Per-genome antiSMASH execution status
+
+-BiG-SCAPE clustering progress and cutoff-specific execution
+
+-Informative messages when clustering is skipped due to insufficient
+comparable BGC content
+
+This feedback allows users to monitor long-running analyses without requiring
+direct access to terminal output, which is especially important for computational
+steps that may run for a while.
 
 ## BiG-SCAPE Output Handling and Statistical Summary
 
