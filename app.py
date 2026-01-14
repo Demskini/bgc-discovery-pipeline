@@ -144,12 +144,6 @@ if submitted and not delete_disabled:
     else:
         st.error("Batch directory not found.")
 
-### MIBiG ###
-
-st.subheader("BiG-SCAPE options")
-
-use_mibig = st.checkbox("Include MIBiG reference clusters", value=True)
-
 ### bigscape cutoffs ###
 
 st.subheader("BiG-SCAPE cutoffs")
@@ -195,10 +189,8 @@ if st.button("Run Pipeline"):
         status_box.error("Select at least one BiG-SCAPE cutoff.")
         st.stop()
 
-    mibig_status = "including MIBiG" if use_mibig else "excluding MIBiG"
     status_box.info(
         f"Running batch `{batch}` with cutoffs {bigscape_cutoffs} "
-        f"{mibig_status}."
     )
 
     # run pipeline with live progress updates
@@ -206,7 +198,6 @@ if st.button("Run Pipeline"):
         run_batch(
             batch,
             bigscape_cutoffs,
-            use_mibig,
             status_callback=stream_status
         )
 

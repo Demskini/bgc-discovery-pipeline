@@ -45,7 +45,6 @@ def fasta_txt_check(file_bytes: bytes) -> bool:
 def run_batch(
     batch_name: str,
     bigscape_cutoffs: list,
-    use_mibig: bool,
     status_callback=None
 ) -> None:
     """
@@ -64,6 +63,7 @@ def run_batch(
         if status_callback is not None:
             status_callback(msg)
         print(msg)
+
     update_status("Entered run_batch()")
 
     root = Path(__file__).resolve().parent.parent
@@ -92,7 +92,6 @@ def run_batch(
 
     for genome in genomes:
 
-        # normalize FASTA .txt files for antiSMASH
         if genome.suffix == ".txt":
             fixed_genome = genome.with_suffix(".fasta")
             genome.rename(fixed_genome)
@@ -126,6 +125,16 @@ def run_batch(
     ### run BiG-SCAPE PER CUTOFF
 
     bigscape_dir.mkdir(exist_ok=True)
+    pfam_dir = (root / "pfam").resolve()
+
+    known_nonfatal = [
+        "no aligned sequences found",
+        "starting with 0 files",
+        "file with list of anchor domains not found",
+        "html_template",
+        "cannot copy tree",
+        "distutilsfileerror"
+    ]
 
     for cutoff in bigscape_cutoffs:
         cutoff_dir = bigscape_dir / f"cutoff_{cutoff}"
@@ -138,32 +147,18 @@ def run_batch(
             "--platform", "linux/amd64",
             "-v", f"{antismash_dir}:/input",
             "-v", f"{cutoff_dir}:/output",
-            "-v", f"{root / 'pfam'}:/pfam",
+            "-v", f"{pfam_dir}:/pfam",
             "-w", "/input",
-        ]
-
-        # only mount MIBiG if the checkbox is checked (streamlit)
-        if use_mibig:
-            bigscape_cmd += [
-                "-v", f"{root / 'mibig'}:/mibig"
-            ]
-
-        bigscape_cmd += [
             "quay.io/biocontainers/bigscape:1.1.5--pyhdfd78af_0",
             "bigscape.py",
             "-i", "/input",
             "-o", "/output",
             "--cutoffs", str(cutoff),
             "--mix",
-            "--include_singletons",
             "--include_gbk_str", "region",
-            "--pfam_dir", "/pfam",
-            "--no_classify"
+            "--skip_ma",
+            "--pfam_dir", "/pfam"
         ]
-
-        # tell BiG-SCAPE where MIBiG is ONLY if mounted
-        if use_mibig:
-            bigscape_cmd += ["--mibig_dir", "/mibig"]
 
         result = subprocess.run(
             bigscape_cmd,
@@ -171,38 +166,68 @@ def run_batch(
             text=True
         )
 
-        if result.returncode != 0:
+    stderr = (result.stderr or "").lower()
+    stdout = (result.stdout or "").lower()
 
-            known_nonfatal = [
-                "No aligned sequences found",
-                "Starting with 0 files",
-                "File with list of anchor domains not found",
-                "html_template",                  # HTML bug
-                "cannot copy tree"                # HTML bug
+    known_nonfatal = [
+        "no aligned sequences found",
+        "starting with 0 files",
+        "file with list of anchor domains not found",
+        "html_template",
+        "cannot copy tree",
+        "running with skip_ma parameter",
+        "unicodedecodeerror",
+        "pickle.load"       
+    ]
+
+    if result.returncode != 0:
+
+        nonfatal_hit = any(pat in stderr for pat in known_nonfatal)
+
+        progressed = any(
+            pat in stderr or pat in stdout
+            for pat in [
+                "predicting domains",
+                "finished generating pfs and pfd",
+                "processing domains sequence files",
+                "running with skip_ma parameter",
+                "using hmmalign",
+                "calculating distance matrix",
+                "launch_hmmalign"
             ]
+        )
 
-            if any(msg.lower() in result.stderr.lower() for msg in known_nonfatal):
-                msg = (
-                    f"BiG-SCAPE completed at cutoff {cutoff} "
-                    "(no comparable BGCs found or HTML output skipped)."
-                )
-                print(msg)
-                if status_callback:
-                    status_callback(msg)
-
-            else:
-                print(f"BiG-SCAPE failed at cutoff {cutoff}")
-                print("STDERR:")
-                print(result.stderr)
-                print("STDOUT:")
-                print(result.stdout)
-                raise RuntimeError(f"BiG-SCAPE failed at cutoff {cutoff}")
-
-        else:
-            msg = f"Finished BiG-SCAPE cutoff {cutoff}"
+        if nonfatal_hit and progressed:
+            msg = (
+                f"BiG-SCAPE stats completed at cutoff {cutoff} "
+                "(matrix / networks intentionally skipped)."
+            )
             print(msg)
             if status_callback:
                 status_callback(msg)
+
+        elif nonfatal_hit:
+            msg = (
+                f"BiG-SCAPE completed at cutoff {cutoff} "
+                "(no comparable BGCs found)."
+            )
+            print(msg)
+            if status_callback:
+                status_callback(msg)
+
+        else:
+            print(f"BiG-SCAPE failed at cutoff {cutoff}")
+            print("STDERR:")
+            print(result.stderr)
+            print("STDOUT:")
+            print(result.stdout)
+            raise RuntimeError(f"BiG-SCAPE failed at cutoff {cutoff}")
+
+    else:
+        msg = f"Finished BiG-SCAPE cutoff {cutoff}"
+        print(msg)
+        if status_callback:
+            status_callback(msg)
 
     final_msg = f"Batch {batch_name} complete."
     print(final_msg)
@@ -210,10 +235,8 @@ def run_batch(
         status_callback(final_msg)
 
 
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit("Usage: python run_batch.py <batch_name>")
 
-    # example CLI defaults (if run through terminal not streamlit)
-    run_batch(sys.argv[1], [0.3], use_mibig=False)
+    run_batch(sys.argv[1], [0.3])
