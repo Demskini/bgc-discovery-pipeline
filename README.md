@@ -119,4 +119,4 @@ producing valid clustering results.
 
 Because of this, the pipeline does not rely on BiG-SCAPE’s HTML output.
 Instead, it works directly with BiG-SCAPE’s core output files to generate
-a custom statistical summary of BGC similarity and clustering patterns.
+a custom statistical summary of BGC similarity.

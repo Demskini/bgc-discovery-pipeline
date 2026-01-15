@@ -42,6 +42,31 @@ def fasta_txt_check(file_bytes: bytes) -> bool:
     lines = [l.strip() for l in text.splitlines() if l.strip()]
     return bool(lines) and lines[0].startswith(">")
 
+def run_stats_script(script_name: str, batch_name :str) -> None:
+    """
+    Run the a stats script creating scripts for the batch.
+
+    Parameters
+    ----
+    script_name : str
+        Name of the script wanting to be ran.
+    batch_name : str
+        Name of the batch the scripts will be ran on. 
+    
+    Returns
+    ----
+    CSV : file
+        The batch directory will contain the output CSV file.
+    """
+    cmd = [
+        sys.executable,
+        str(Path(__file__).parent / script_name),
+        "--batch",
+        batch_name
+    ]
+    subprocess.run(cmd, check=True)
+
+
 def run_batch(
     batch_name: str,
     bigscape_cutoffs: list,
@@ -88,7 +113,7 @@ def run_batch(
     if not genomes:
         sys.exit(f"ERROR: No genome files found in {input_dir}")
 
-    ### run AntiSMASH PER GENOME
+    ### run AntiSMASH per genome ###
 
     for genome in genomes:
 
@@ -122,7 +147,31 @@ def run_batch(
         subprocess.run(cmd, check=True)
         update_status(f"Finished antiSMASH on {genome.name}")
 
-    ### run BiG-SCAPE PER CUTOFF
+    ### build statistics from antiSMASH outputs ###
+
+    update_status("Building BGC tables and statistics")
+
+    try:
+        run_stats_script("build_antismash_bgc_table.py", batch_name)
+        update_status("Built master antiSMASH BGC table")
+
+        run_stats_script("build_genome_bgc_stats.py", batch_name)
+        update_status("Built genome-level BGC statistics")
+
+        run_stats_script("build_batch_bgc_stats.py", batch_name)
+        update_status("Built batch-level BGC statistics")
+
+        run_stats_script("build_bgc_type_stats.py", batch_name)
+        update_status("Built BGC type frequency table")
+
+        run_stats_script("build_bgc_catalog.py", batch_name)
+        update_status("Built BGC catalog")
+
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError("Statistics generation failed") from e
+
+
+    ### run BiG-SCAPE per cut
 
     bigscape_dir.mkdir(exist_ok=True)
     pfam_dir = (root / "pfam").resolve()
