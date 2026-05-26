@@ -28,12 +28,11 @@ with open(INPUT_CSV, newline="") as f:
             row["region_number"],
             row["bgc_type"],
             row["bgc_length_bp"],
-            row["bgc_start"],
-            row["bgc_end"],
         ])
 
 with open(OUTPUT_CSV, "w", newline="") as f:
     writer = csv.writer(f)
+
     writer.writerow([
         "batch_id",
         "genome_id",
@@ -42,9 +41,8 @@ with open(OUTPUT_CSV, "w", newline="") as f:
         "region_number",
         "bgc_type",
         "bgc_length_bp",
-        "bgc_start",
-        "bgc_end",
     ])
+
     writer.writerows(rows)
 
 print(f"{len(rows)} BGCs written to {OUTPUT_CSV}")

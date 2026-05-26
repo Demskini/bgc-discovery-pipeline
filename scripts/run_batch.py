@@ -158,8 +158,8 @@ def run_batch(
         run_stats_script("build_genome_bgc_stats.py", batch_name)
         update_status("Built genome-level BGC statistics")
 
-        run_stats_script("build_batch_bgc_stats.py", batch_name)
-        update_status("Built batch-level BGC statistics")
+        run_stats_script("build_bgc_summary_statistics.py", batch_name)
+        update_status("Built BGC summary statistics")
 
         run_stats_script("build_bgc_type_stats.py", batch_name)
         update_status("Built BGC type frequency table")

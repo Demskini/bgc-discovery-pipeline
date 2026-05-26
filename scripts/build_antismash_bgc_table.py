@@ -3,34 +3,31 @@ import csv
 import argparse
 from Bio import SeqIO
 
-### arguments ###
-
 parser = argparse.ArgumentParser(
     description="Build master BGC table from antiSMASH outputs"
 )
 parser.add_argument("--batch", required=True)
 args = parser.parse_args()
 
-### paths ###
-
 PIPELINE_ROOT = Path(__file__).resolve().parents[1]
 BATCH_DIR = PIPELINE_ROOT / "batches" / args.batch
 ANTISMASH_DIR = BATCH_DIR / "antismash"
 OUTPUT_CSV = BATCH_DIR / "master_bgc_antismash.csv"
 
-### collect rows ###
-
 rows = []
 
 for genome_dir in ANTISMASH_DIR.iterdir():
+
     if not genome_dir.is_dir():
         continue
 
     genome_id = genome_dir.name
 
     for gbk_file in genome_dir.glob("*.region*.gbk"):
+
         try:
             record = SeqIO.read(gbk_file, "genbank")
+
         except Exception:
             continue
 
@@ -40,12 +37,14 @@ for genome_dir in ANTISMASH_DIR.iterdir():
             (f for f in record.features if f.type == "region"),
             None
         )
+
         if region_feature is None:
             continue
 
-        start = int(region_feature.location.start)
-        end = int(region_feature.location.end)
-        length = end - start
+        bgc_length_bp = (
+            int(region_feature.location.end)
+            - int(region_feature.location.start)
+        )
 
         bgc_type = ";".join(
             region_feature.qualifiers.get("product", ["unknown"])
@@ -60,15 +59,12 @@ for genome_dir in ANTISMASH_DIR.iterdir():
             bgc_id,
             region_number,
             bgc_type,
-            start,
-            end,
-            length,
+            bgc_length_bp,
             "antiSMASH"
         ])
 
-### write output ###
-
 with open(OUTPUT_CSV, "w", newline="") as f:
+
     writer = csv.writer(f)
 
     writer.writerow([
@@ -78,8 +74,6 @@ with open(OUTPUT_CSV, "w", newline="") as f:
         "bgc_id",
         "region_number",
         "bgc_type",
-        "bgc_start",
-        "bgc_end",
         "bgc_length_bp",
         "source_tool"
     ])
